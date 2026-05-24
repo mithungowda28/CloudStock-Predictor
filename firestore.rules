@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // USER PROFILES
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isValidUserProfile(request.resource.data);
+      allow delete: if false; // Prevention of accidental loss
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'email', 'watchlist', 'preferences', 'alerts']) &&
+             data.uid == request.auth.uid &&
+             data.email is string &&
+             data.watchlist is list &&
+             data.watchlist.size() <= 100 &&
+             data.alerts is list &&
+             data.preferences is map;
+    }
+
+    // PREDICTIONS (Backup log)
+    match /predictions/{predictionId} {
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid && isValidPrediction(request.resource.data);
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    function isValidPrediction(data) {
+      return data.keys().hasAll(['userId', 'symbol', 'price', 'timestamp']) &&
+             data.symbol is string && data.symbol.size() <= 10 &&
+             data.price is number;
+    }
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Stores user preferences and watchlist.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "watchlist": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "alerts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "symbol": { "type": "string" },
+              "threshold": { "type": "number" },
+              "condition": { "type": "string", "enum": ["ABOVE", "BELOW"] },
+              "triggered": { "type": "boolean" }
+            }
+          }
+        },
+        "preferences": {
+          "type": "object",
+          "properties": {
+            "riskTolerance": { "type": "string", "enum": ["low", "medium", "high"] },
+            "notificationsEnabled": { "type": "boolean" }
+          }
+        },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "watchlist"]
+    },
+    "PredictionHistory": {
+      "title": "Prediction History",
+      "description": "Snapshot of AI predictions for recovery and analysis.",
+      "type": "object",
+      "properties": {
+        "symbol": { "type": "string" },
+        "price": { "type": "number" },
+        "prediction": { "type": "object" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User specific data and watchlist."
+    },
+    "/predictions/{predictionId}": {
+      "schema": "PredictionHistory",
+      "description": "Global log of high-confidence predictions."
+    }
+  }
+}
